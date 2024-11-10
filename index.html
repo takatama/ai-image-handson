@@ -76,8 +76,13 @@
         display: none;
       }
     </style>
+    <script
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_turnstileCb"
+      defer
+    ></script>
   </head>
   <body>
+    <div id="turnstile-widget" style="padding-top: 20px"></div>
     <label for="prompt">どんな画像を生成しますか？詳しく教えてください</label>
     <textarea id="prompt" placeholder="例: かわいい猫のイラスト"></textarea>
     <!-- Step2: 翻訳した英語プロンプトで画像生成 -->
@@ -200,6 +205,14 @@
         } finally {
           toggleButton(generateBtn, generateSpinner, false);
         }
+      }
+      function _turnstileCb() {
+        console.debug("_turnstileCb called");
+
+        turnstile.render("#turnstile-widget", {
+          sitekey: "0x4AAAAAAAzs018lIIK5s9-R",
+          theme: "light",
+        });
       }
     </script>
   </body>

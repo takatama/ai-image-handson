@@ -1,9 +1,18 @@
-export async function onRequest(context) {
-  const { request, env } = context;
-  const url = new URL(request.url);
-  const prompt = url.searchParams.get("prompt") || "かわいい猫のイラスト";
-  return await generateImage(prompt, env);
-}
+import turnstilePlugin from "@cloudflare/pages-plugin-turnstile";
+
+const onRequestGet = [
+  async (context) => {
+    return turnstilePlugin({
+      secret: context.env.TRUNSTILE_SECRET_KEYSECRET_KEY,
+    })(context);
+  },
+  async (context) => {
+    const { request, env } = context;
+    const url = new URL(request.url);
+    const prompt = url.searchParams.get("prompt") || "かわいい猫のイラスト";
+    return await generateImage(prompt, env);
+  },
+];
 
 async function generateImage(prompt, env) {
   const inputs = { prompt };
