@@ -2,10 +2,7 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI画像生成ハンズオン</title>
     <style>
       body {
@@ -126,8 +123,11 @@
         errorMessage.style.display = "block";
       }
 
-      async function fetchEventStream(url, callback) {
-        const response = await fetch(url);
+      async function fetchEventStream(url, formData, callback) {
+        const response = await fetch(url, {
+          method: "POST",
+          body: formData,
+        });
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
 
@@ -141,7 +141,7 @@
             line = line.trim();
             if (line.startsWith("data:")) {
               const dataContent = line.slice(5).trim();
-              if (dataContent === "[DONE]") return; // [DONE]メッセージをスキップ
+              if (dataContent === "[DONE]") return;
 
               try {
                 const jsonData = JSON.parse(dataContent);
@@ -161,13 +161,12 @@
         let translatedText = "";
 
         try {
-          await fetchEventStream(
-            `/translate?prompt=${encodeURIComponent(promptInput.value)}`,
-            (text) => {
-              translatedText += text;
-              translatedPrompt.value = translatedText;
-            }
-          );
+          const formData = new FormData();
+          formData.append("prompt", promptInput.value);
+          await fetchEventStream(`/translate`, formData, (text) => {
+            translatedText += text;
+            translatedPrompt.value = translatedText;
+          });
         } catch (error) {
           handleError(error);
         } finally {
@@ -181,16 +180,16 @@
         errorMessage.style.display = "none";
 
         try {
+          const formData = new FormData();
           // Step1. 日本語プロンプトで画像生成
-          // const response = await fetch(
-          //   `/generate-image?prompt=${encodeURIComponent(promptInput.value)}`
-          // );
+          // formData.append("prompt", promptInput.value);
           // Step2. 翻訳した英語プロンプトで画像生成
-          const response = await fetch(
-            `/generate-image?prompt=${encodeURIComponent(
-              translatedPrompt.value
-            )}`
-          );
+          formData.append("prompt", translatedPrompt.value);
+
+          const response = await fetch(`/generate-image`, {
+            method: "POST",
+            body: formData,
+          });
           if (!response.ok) throw new Error("画像生成エラー");
 
           const data = await response.json();
