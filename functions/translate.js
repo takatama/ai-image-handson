@@ -1,16 +1,14 @@
 import turnstilePlugin from "@cloudflare/pages-plugin-turnstile";
 
-const onRequestGet = [
+export const onRequestPost = [
   async (context) => {
     return turnstilePlugin({
-      secret: context.env.TRUNSTILE_SECRET_KEYSECRET_KEY,
+      secret: context.env.TRUNSTILE_SECRET_KEY,
     })(context);
   },
-  async (context) => {
-    const { request, env } = context;
-    const url = new URL(request.url);
-    const prompt =
-      url.searchParams.get("prompt") || "翻訳するテキストがありません";
+  async ({ request, env }) => {
+    const formData = await request.formData();
+    const prompt = formData.get("prompt");
     return await translatePrompt(prompt, env);
   },
 ];

@@ -126,8 +126,12 @@
         errorMessage.style.display = "block";
       }
 
-      async function fetchEventStream(url, callback) {
-        const response = await fetch(url);
+      async function fetchEventStream(url, formData, callback) {
+        const response = await fetch(url, {
+          method: "POST",
+          body: formData,
+        });
+        turnstile.reset();
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
 
@@ -160,17 +164,19 @@
         toggleButton(translateBtn, translateSpinner, true);
         let translatedText = "";
 
+        const formData = new FormData();
+        formData.append("prompt", promptInput.value);
+        formData.append("cf-turnstile-response", turnstile.getResponse());
+
         try {
-          await fetchEventStream(
-            `/translate?prompt=${encodeURIComponent(promptInput.value)}`,
-            (text) => {
-              translatedText += text;
-              translatedPrompt.value = translatedText;
-            }
-          );
+          await fetchEventStream(`/translate`, formData, (text) => {
+            translatedText += text;
+            translatedPrompt.value = translatedText;
+          });
         } catch (error) {
           handleError(error);
         } finally {
+          // turnstile.reset(); // tokenは使いまわせないので、取得前にリセットしておく。
           toggleButton(translateBtn, translateSpinner, false);
         }
       }
@@ -180,17 +186,16 @@
         img.style.display = "none";
         errorMessage.style.display = "none";
 
+        const formData = new FormData();
+        formData.append("prompt", translatedPrompt.value);
+        formData.append("cf-turnstile-response", turnstile.getResponse());
+
         try {
-          // Step1. 日本語プロンプトで画像生成
-          // const response = await fetch(
-          //   `/generate-image?prompt=${encodeURIComponent(promptInput.value)}`
-          // );
-          // Step2. 翻訳した英語プロンプトで画像生成
-          const response = await fetch(
-            `/generate-image?prompt=${encodeURIComponent(
-              translatedPrompt.value
-            )}`
-          );
+          const response = await fetch(`/generate-image`, {
+            method: "POST",
+            body: formData,
+          });
+          turnstile.reset();
           if (!response.ok) throw new Error("画像生成エラー");
 
           const data = await response.json();
@@ -203,15 +208,18 @@
         } catch (error) {
           handleError(error);
         } finally {
+          // turnstile.reset(); // tokenは使いまわせないので、取得前にリセットしておく。
           toggleButton(generateBtn, generateSpinner, false);
         }
       }
+
       function _turnstileCb() {
         console.debug("_turnstileCb called");
 
         turnstile.render("#turnstile-widget", {
           sitekey: "0x4AAAAAAAzs018lIIK5s9-R",
           theme: "light",
+          "expired-callback": () => alert("expired"),
         });
       }
     </script>
