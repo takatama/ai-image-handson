@@ -76,12 +76,17 @@
         display: none;
       }
     </style>
+    <script
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_turnstileCb"
+      defer
+    ></script>
   </head>
   <body>
+    <div id="turnstile-widget" style="padding-bottom: 20px"></div>
     <label for="prompt">どんな画像を生成しますか？詳しく教えてください</label>
     <textarea id="prompt" placeholder="例: かわいい猫のイラスト"></textarea>
     <!-- Step2: 翻訳した英語プロンプトで画像生成 -->
-    <button id="translate-btn" onclick="translateText()">
+    <button id="translate-btn" onclick="translateText()" disabled>
       <span>翻訳</span>
       <div class="spinner" id="translate-spinner"></div>
     </button>
@@ -90,7 +95,7 @@
       id="translated-prompt"
       placeholder="ここに英語の翻訳結果が表示されます"
     ></textarea>
-    <button id="generate-btn" onclick="generateImage()">
+    <button id="generate-btn" onclick="generateImage()" disabled>
       <span>画像生成</span>
       <div class="spinner" id="generate-spinner"></div>
     </button>
@@ -200,6 +205,20 @@
         } finally {
           toggleButton(generateBtn, generateSpinner, false);
         }
+      }
+      function _turnstileCb() {
+        turnstile.render("#turnstile-widget", {
+          sitekey: "0x4AAAAAAAzs018lIIK5s9-R",
+          theme: "light",
+          callback: () => {
+            translateBtn.disabled = false;
+            generateBtn.disabled = false;
+          },
+          "expired-callback": () => {
+            translateBtn.disabled = true;
+            generateBtn.disabled = true;
+          },
+        });
       }
     </script>
   </body>
