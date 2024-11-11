@@ -1,8 +1,6 @@
-export async function onRequestGet(context) {
-  const { request, env } = context;
-  const url = new URL(request.url);
-  const prompt =
-    url.searchParams.get("prompt") || "翻訳するテキストがありません";
+export async function onRequestPost({ request, env }) {
+  const formData = await request.formData();
+  const prompt = formData.get("prompt");
   return await translatePrompt(prompt, env);
 }
 
