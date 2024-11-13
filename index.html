@@ -162,7 +162,7 @@
 
         try {
           const formData = new FormData();
-          formData.append("prompt", promptInput.value);
+          formData.set("prompt", promptInput.value);
           await fetchEventStream(`/translate`, formData, (text) => {
             translatedText += text;
             translatedPrompt.value = translatedText;
@@ -182,9 +182,9 @@
         try {
           const formData = new FormData();
           // Step1. 日本語プロンプトで画像生成
-          // formData.append("prompt", promptInput.value);
+          // formData.set("prompt", promptInput.value);
           // Step2. 翻訳した英語プロンプトで画像生成
-          formData.append("prompt", translatedPrompt.value);
+          formData.set("prompt", translatedPrompt.value);
 
           const response = await fetch(`/generate-image`, {
             method: "POST",
