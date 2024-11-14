@@ -72,6 +72,12 @@
         max-height: 100%;
         display: none;
       }
+      .style-hint {
+        font-size: 0.8em;
+        color: #6c757d;
+        margin-top: 4px;
+        margin-bottom: 12px;
+      }
     </style>
     <script
       src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_turnstileCb"
@@ -81,6 +87,9 @@
   <body>
     <div id="turnstile-widget" style="padding-bottom: 20px"></div>
     <label for="prompt">何をどんな風に描きたいですか？</label>
+    <p class="style-hint">
+      多彩な表現を楽しもう！ポップアート風、油絵風、水彩画風、報道写真風など
+    </p>
     <textarea
       id="prompt"
       placeholder="例: 気持ちよく眠っている猫をポップアート風に"
@@ -96,7 +105,7 @@
       placeholder="ここに英語の翻訳結果が表示されます"
     ></textarea>
     <button id="generate-btn" onclick="generateImage()" disabled>
-      <span>画像生成</span>
+      <span>画像を生成</span>
       <div class="spinner" id="generate-spinner"></div>
     </button>
     <div id="image-container">
