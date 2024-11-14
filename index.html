@@ -80,11 +80,14 @@
   </head>
   <body>
     <div id="turnstile-widget" style="padding-bottom: 20px"></div>
-    <label for="prompt">どんな画像を生成しますか？詳しく教えてください</label>
-    <textarea id="prompt" placeholder="例: かわいい猫のイラスト"></textarea>
+    <label for="prompt">何をどんな風に描きたいですか？</label>
+    <textarea
+      id="prompt"
+      placeholder="例: 気持ちよく眠っている猫をポップアート風に"
+    ></textarea>
     <!-- Step2: 翻訳した英語プロンプトで画像生成 -->
     <button id="translate-btn" onclick="translateText()" disabled>
-      <span>翻訳</span>
+      <span>英語に翻訳</span>
       <div class="spinner" id="translate-spinner"></div>
     </button>
     <label for="translated-prompt">翻訳結果</label>
@@ -99,7 +102,7 @@
     <div id="image-container">
       <img id="generated-image" src="" alt="Generated Image" />
       <p id="error-message" style="color: red; display: none">
-        画像生成に失敗しました。もう一度試してください。
+        画像生成に失敗しました。プロンプトを変えて試してください。
       </p>
     </div>
 
@@ -123,31 +126,32 @@
         errorMessage.style.display = "block";
       }
 
-      async function fetchEventStream(url, formData, callback) {
-        const response = await fetch(url, {
-          method: "POST",
-          body: formData,
-        });
+      async function handleEventStream(response, textarea) {
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error("エラー:", errorData.error);
+        }
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
-
         let text = "";
+
         while (true) {
-          const { done, value } = await reader.read();
+          const { value, done } = await reader.read();
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
           chunk.split("\n").forEach((line) => {
-            line = line.trim();
-            if (line.startsWith("data:")) {
-              const dataContent = line.slice(5).trim();
-              if (dataContent === "[DONE]") return;
-
+            if (line.startsWith("data: ")) {
+              const data = line.replace("data: ", "");
+              if (data === "[DONE]") return;
               try {
-                const jsonData = JSON.parse(dataContent);
-                callback(jsonData.response || "");
+                const jsonData = JSON.parse(data);
+                text += jsonData.response;
+                textarea.value = text;
+                textarea.scrollTop = textarea.scrollHeight;
               } catch (error) {
-                console.error("JSON parse error:", error);
+                // JSONデータが壊れている場合は無視する
               }
             }
           });
@@ -163,10 +167,11 @@
         try {
           const formData = new FormData();
           formData.set("prompt", promptInput.value);
-          await fetchEventStream(`/translate`, formData, (text) => {
-            translatedText += text;
-            translatedPrompt.value = translatedText;
+          const response = await fetch(`/translate`, {
+            method: "POST",
+            body: formData,
           });
+          await handleEventStream(response, translatedPrompt);
         } catch (error) {
           handleError(error);
         } finally {

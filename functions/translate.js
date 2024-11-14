@@ -16,8 +16,10 @@ async function translatePrompt(prompt, env) {
   const messages = [
     {
       role: "system",
-      content:
-        "If the following text is in Japanese, translate it into English phrases without additional comments. If it is already in English, reply with the text exactly as it is.",
+      content: `
+Translate the following Japanese text into a detailed English prompt for image generation,
+including all subjects, actions, and style details.
+Output only the prompt.`,
     },
     { role: "user", content: prompt },
   ];
