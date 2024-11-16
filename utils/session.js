@@ -8,7 +8,6 @@ const COOKIE_OPTIONS = {
   sameSite: "Strict",
   maxAge: 360, // Turnstileの有効期限（5分）より、少しだけ長くする（6分）
   path: "/",
-  expires: new Date(Date(Date.now() + 360 * 1000)).toUTCString(),
 };
 
 // ユーティリティ関数
@@ -25,7 +24,6 @@ export async function createSignedCookie(value, sessionSecret) {
     `Secure=${COOKIE_OPTIONS.secure ? "true" : ""}`,
     `SameSite=${COOKIE_OPTIONS.sameSite}`,
     `Max-Age=${COOKIE_OPTIONS.maxAge}`,
-    `Expires=${COOKIE_OPTIONS.expires}`,
   ]
     .filter(Boolean) // 無効なプロパティを削除
     .join("; ");
