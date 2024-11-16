@@ -93,6 +93,10 @@
       src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=initializeTurnstile"
       defer
     ></script>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:;"
+    />
   </head>
   <body>
     <div id="turnstile-widget" style="margin-bottom: 20px"></div>
@@ -113,9 +117,7 @@
         id="translate-error-message"
         class="error-message"
         style="display: none"
-      >
-        翻訳に失敗しました。もう一度試してください。
-      </p>
+      ></p>
       <label for="translated-prompt">翻訳結果</label>
       <textarea
         id="translated-prompt"
@@ -129,9 +131,7 @@
         id="generate-error-message"
         class="error-message"
         style="display: none"
-      >
-        画像生成に失敗しました。もう一度試すか、プロンプトを変えてください。
-      </p>
+      ></p>
       <div id="image-container">
         <img id="generated-image" src="" alt="Generated Image" />
       </div>
@@ -171,6 +171,7 @@
 
       function initializeTurnstile() {
         turnstile.render("#turnstile-widget", {
+          // 自分で作成したTurnstileのSite Keyを記入してください
           sitekey: "0x4AAAAAAAzs018lIIK5s9-R",
           callback: handleTurnstileResponse,
           "expired-callback": resetToTurnstile,
@@ -231,6 +232,8 @@
           });
           if (!response.ok) {
             if (response.status === 401) {
+              translateErrorMessage.textContent =
+                "セッションの有効期限が切れました。もう一度試してください。";
               translateErrorMessage.style.display = "block";
               resetToTurnstile();
             } else {
@@ -241,6 +244,8 @@
           await handleEventStream(response, translatedPrompt);
         } catch (error) {
           console.error("エラー: ", error);
+          translateErrorMessage.textContent =
+            "翻訳に失敗しました。もう一度試してください。";
           translateErrorMessage.style.display = "block";
         } finally {
           toggleButton(translateBtn, translateSpinner, false);
@@ -254,9 +259,6 @@
 
         try {
           const formData = new FormData();
-          // Step1. 日本語プロンプトで画像生成
-          // formData.set("prompt", promptInput.value);
-          // Step2. 翻訳した英語プロンプトで画像生成
           formData.set("prompt", translatedPrompt.value);
 
           const response = await fetch(`/generate-image`, {
@@ -267,6 +269,9 @@
 
           if (!response.ok) {
             if (response.status === 401) {
+              generateErrorMessage.textContent =
+                "セッションの有効期限が切れました。もう一度試してください。";
+              generateErrorMessage.style.display = "block";
               resetToTurnstile();
             } else {
               throw new Error("画像生成エラー");
@@ -282,6 +287,8 @@
           }
         } catch (error) {
           console.error("エラー: ", error);
+          generateErrorMessage.textContent =
+            "画像生成に失敗しました。もう一度試すか、プロンプトを変えてください。";
           generateErrorMessage.style.display = "block";
         } finally {
           toggleButton(generateBtn, generateSpinner, false);

@@ -6,17 +6,31 @@ const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: true,
   sameSite: "Strict",
-  maxAge: 3600, // 有効期限は1時間（秒）
+  maxAge: 360, // Turnstileの有効期限（5分）より、少しだけ長くする（6分）
+  path: "/",
+  expires: new Date(Date(Date.now() + 360 * 1000)).toUTCString(),
 };
 
 // ユーティリティ関数
 export async function createSignedCookie(value, sessionSecret) {
   const token = await new SignJWT(value)
     .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("1h")
+    // Turnstileの有効期限（5分）より、少しだけ長くする（6分）
+    .setExpirationTime("6m")
     .sign(sessionSecret);
 
-  return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${COOKIE_OPTIONS.maxAge}`;
+  const cookieAttributes = [
+    `Path=${COOKIE_OPTIONS.path}`,
+    `HttpOnly=${COOKIE_OPTIONS.httpOnly ? "true" : ""}`,
+    `Secure=${COOKIE_OPTIONS.secure ? "true" : ""}`,
+    `SameSite=${COOKIE_OPTIONS.sameSite}`,
+    `Max-Age=${COOKIE_OPTIONS.maxAge}`,
+    `Expires=${COOKIE_OPTIONS.expires}`,
+  ]
+    .filter(Boolean) // 無効なプロパティを削除
+    .join("; ");
+
+  return `${COOKIE_NAME}=${token}; ${cookieAttributes}`;
 }
 
 async function validateSessionCookie(request, sessionSecret) {

@@ -1,11 +1,12 @@
 import { verifySession } from "../utils/session.js";
 import { verifyOrigin } from "../utils/origin.js";
+import { sanitize } from "../utils/sanitize.js";
 
 export const onRequestPost = [verifySession, verifyOrigin, handleTranslate];
 
 async function handleTranslate({ request, env }) {
   const formData = await request.formData();
-  const prompt = formData.get("prompt");
+  const prompt = sanitize(formData.get("prompt"));
   return await translate(prompt, env);
 }
 
