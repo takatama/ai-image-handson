@@ -38,6 +38,11 @@
         justify-content: center;
         cursor: pointer;
         margin-bottom: 10px;
+
+        padding: 10px;
+        background-color: #4caf50;
+        color: white;
+        cursor: pointer;
       }
       button:disabled {
         background-color: #a5d6a7;
@@ -78,41 +83,47 @@
         margin-top: 4px;
         margin-bottom: 12px;
       }
+      .error-message {
+        color: red;
+        display: none;
+      }
     </style>
     <script
-      src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_turnstileCb"
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=initializeTurnstile"
       defer
     ></script>
   </head>
   <body>
-    <div id="turnstile-widget" style="padding-bottom: 20px"></div>
-    <label for="prompt">何をどんな風に描きたいですか？</label>
-    <p class="style-hint">
-      多彩な表現を楽しもう！ポップアート風、油絵風、水彩画風、報道写真風など
-    </p>
-    <textarea
-      id="prompt"
-      placeholder="例: 気持ちよく眠っている猫をポップアート風に"
-    ></textarea>
-    <!-- Step2: 翻訳した英語プロンプトで画像生成 -->
-    <button id="translate-btn" onclick="translateText()" disabled>
-      <span>英語に翻訳</span>
-      <div class="spinner" id="translate-spinner"></div>
-    </button>
-    <label for="translated-prompt">翻訳結果</label>
-    <textarea
-      id="translated-prompt"
-      placeholder="ここに英語の翻訳結果が表示されます"
-    ></textarea>
-    <button id="generate-btn" onclick="generateImage()" disabled>
-      <span>画像を生成</span>
-      <div class="spinner" id="generate-spinner"></div>
-    </button>
-    <div id="image-container">
-      <img id="generated-image" src="" alt="Generated Image" />
-      <p id="error-message" style="color: red; display: none">
-        画像生成に失敗しました。プロンプトを変えて試してください。
+    <div id="turnstile-widget" style="margin-bottom: 20px"></div>
+    <div id="main-content">
+      <label for="prompt">何をどんな風に描きたいですか？</label>
+      <p class="style-hint">
+        多彩な表現を楽しもう！ポップアート風、油絵風、水彩画風、報道写真風など
       </p>
+      <textarea
+        id="prompt"
+        placeholder="例: 気持ちよく眠っている猫をポップアート風に"
+      ></textarea>
+      <!-- Step2: 翻訳した英語プロンプトで画像生成 -->
+      <button id="translate-btn" onclick="translateText()" disabled>
+        <span>英語に翻訳</span>
+        <div class="spinner" id="translate-spinner"></div>
+      </button>
+      <label for="translated-prompt">翻訳結果</label>
+      <textarea
+        id="translated-prompt"
+        placeholder="ここに英語の翻訳結果が表示されます"
+      ></textarea>
+      <button id="generate-btn" onclick="generateImage()" disabled>
+        <span>画像を生成</span>
+        <div class="spinner" id="generate-spinner"></div>
+      </button>
+      <div id="image-container">
+        <img id="generated-image" src="" alt="Generated Image" />
+        <p id="error-message" class="error-message">
+          画像生成に失敗しました。プロンプトを変えて試してください。
+        </p>
+      </div>
     </div>
 
     <script>
@@ -124,6 +135,38 @@
       const generateSpinner = document.getElementById("generate-spinner");
       const img = document.getElementById("generated-image");
       const errorMessage = document.getElementById("error-message");
+
+      let isAuthenticated = false;
+
+      async function handleTurnstileResponse(token) {
+        const formData = new FormData();
+        formData.set("cf-turnstile-response", token);
+        const response = await fetch("/auth", {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          throw new Error("認証に失敗しました");
+        }
+        isAuthenticated = true;
+        translateBtn.disabled = false;
+        generateBtn.disabled = false;
+      }
+
+      function initializeTurnstile() {
+        turnstile.render("#turnstile-widget", {
+          sitekey: "0x4AAAAAAAzs018lIIK5s9-R",
+          callback: handleTurnstileResponse,
+          "expired-callback": resetToTurnstile,
+        });
+      }
+
+      function resetToTurnstile() {
+        translateBtn.disabled = true;
+        generateBtn.disabled = true;
+        isAuthenticated = false;
+        turnstile.reset();
+      }
 
       function toggleButton(button, spinner, isLoading) {
         button.disabled = isLoading;
@@ -137,8 +180,12 @@
 
       async function handleEventStream(response, textarea) {
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error("エラー:", errorData.error);
+          if (response.status === 401) {
+            resetToTurnstile();
+          } else {
+            const errorData = await response.json();
+            throw new Error("エラー:", errorData.error);
+          }
         }
 
         const reader = response.body.getReader();
@@ -179,6 +226,7 @@
           const response = await fetch(`/translate`, {
             method: "POST",
             body: formData,
+            credentials: "include",
           });
           await handleEventStream(response, translatedPrompt);
         } catch (error) {
@@ -203,8 +251,16 @@
           const response = await fetch(`/generate-image`, {
             method: "POST",
             body: formData,
+            credentials: "include",
           });
-          if (!response.ok) throw new Error("画像生成エラー");
+
+          if (!response.ok) {
+            if (response.status === 401) {
+              resetToTurnstile();
+            } else {
+              throw new Error("画像生成エラー");
+            }
+          }
 
           const data = await response.json();
           if (data.imageUrl) {
@@ -218,20 +274,6 @@
         } finally {
           toggleButton(generateBtn, generateSpinner, false);
         }
-      }
-      function _turnstileCb() {
-        turnstile.render("#turnstile-widget", {
-          sitekey: "0x4AAAAAAAzs018lIIK5s9-R",
-          theme: "light",
-          callback: () => {
-            translateBtn.disabled = false;
-            generateBtn.disabled = false;
-          },
-          "expired-callback": () => {
-            translateBtn.disabled = true;
-            generateBtn.disabled = true;
-          },
-        });
       }
     </script>
   </body>

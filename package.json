@@ -4,5 +4,9 @@
   "devDependencies": {
     "wrangler": "3.86.0"
   },
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@cloudflare/pages-plugin-turnstile": "^1.0.2",
+    "jose": "^5.9.6"
+  }
 }
