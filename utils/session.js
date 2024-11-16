@@ -19,7 +19,7 @@ export async function createSignedCookie(value, sessionSecret) {
   return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${COOKIE_OPTIONS.maxAge}`;
 }
 
-export async function validateSessionCookie(request, sessionSecret) {
+async function validateSessionCookie(request, sessionSecret) {
   const cookie = request.headers.get("Cookie");
   if (!cookie) return false;
 
@@ -33,4 +33,16 @@ export async function validateSessionCookie(request, sessionSecret) {
   } catch {
     return false;
   }
+}
+
+export async function verifySession(context) {
+  const { request, env } = context;
+  const sessionSecret = new TextEncoder().encode(env.SESSION_SECRET);
+
+  const isValidSession = await validateSessionCookie(request, sessionSecret);
+  if (!isValidSession) {
+    console.error("認証エラー: 無効なセッションCookie");
+    return new Response("Unauthorized", { status: 401 });
+  }
+  return context.next();
 }

@@ -1,29 +1,15 @@
-import { validateSessionCookie } from "../utils/session.js";
+import { verifySession } from "../utils/session.js";
+import { verifyOrigin } from "../utils/origin.js";
 
-export async function onRequestPost({ request, env }) {
-  const sessionSecret = new TextEncoder().encode(env.SESSION_SECRET);
+export const onRequestPost = [verifySession, verifyOrigin, handleTranslate];
 
-  // セッションCookieの検証
-  const isValidSession = await validateSessionCookie(request, sessionSecret);
-  if (!isValidSession) {
-    console.error("認証エラー: 無効なセッションCookie");
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  const allowedOrigin = env.ALLOWED_ORIGIN;
-  const origin = request.headers.get("Origin");
-  if (allowedOrigin !== origin) {
-    console.error(
-      `許可されていないOriginです。origin=${origin}, allowedOrigin=${allowedOrigin}`
-    );
-    return new Response("Forbidden", { status: 403 });
-  }
+async function handleTranslate({ request, env }) {
   const formData = await request.formData();
   const prompt = formData.get("prompt");
-  return await translatePrompt(prompt, env);
+  return await translate(prompt, env);
 }
 
-async function translatePrompt(prompt, env) {
+async function translate(prompt, env) {
   const messages = [
     {
       role: "system",
