@@ -1,4 +1,15 @@
+import { validateSessionCookie } from "../utils/session.js";
+
 export async function onRequestPost({ request, env }) {
+  const sessionSecret = new TextEncoder().encode(env.SESSION_SECRET);
+
+  // セッションCookieの検証
+  const isValidSession = await validateSessionCookie(request, sessionSecret);
+  if (!isValidSession) {
+    console.error("認証エラー: 無効なセッションCookie");
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const allowedOrigin = env.ALLOWED_ORIGIN;
   const origin = request.headers.get("Origin");
   if (allowedOrigin !== origin) {
