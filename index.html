@@ -86,6 +86,7 @@
       .error-message {
         color: red;
         display: none;
+        font-size: 0.9em;
       }
     </style>
     <script
@@ -104,11 +105,17 @@
         id="prompt"
         placeholder="例: 気持ちよく眠っている猫をポップアート風に"
       ></textarea>
-      <!-- Step2: 翻訳した英語プロンプトで画像生成 -->
       <button id="translate-btn" onclick="translateText()" disabled>
         <span>英語に翻訳</span>
         <div class="spinner" id="translate-spinner"></div>
       </button>
+      <p
+        id="translate-error-message"
+        class="error-message"
+        style="display: none"
+      >
+        翻訳に失敗しました。もう一度試してください。
+      </p>
       <label for="translated-prompt">翻訳結果</label>
       <textarea
         id="translated-prompt"
@@ -118,11 +125,15 @@
         <span>画像を生成</span>
         <div class="spinner" id="generate-spinner"></div>
       </button>
+      <p
+        id="generate-error-message"
+        class="error-message"
+        style="display: none"
+      >
+        画像生成に失敗しました。もう一度試すか、プロンプトを変えてください。
+      </p>
       <div id="image-container">
         <img id="generated-image" src="" alt="Generated Image" />
-        <p id="error-message" class="error-message">
-          画像生成に失敗しました。プロンプトを変えて試してください。
-        </p>
       </div>
     </div>
 
@@ -134,7 +145,12 @@
       const translateSpinner = document.getElementById("translate-spinner");
       const generateSpinner = document.getElementById("generate-spinner");
       const img = document.getElementById("generated-image");
-      const errorMessage = document.getElementById("error-message");
+      const translateErrorMessage = document.getElementById(
+        "translate-error-message"
+      );
+      const generateErrorMessage = document.getElementById(
+        "generate-error-message"
+      );
 
       let isAuthenticated = false;
 
@@ -173,21 +189,7 @@
         spinner.style.display = isLoading ? "block" : "none";
       }
 
-      function handleError(error) {
-        console.error("エラー:", error);
-        errorMessage.style.display = "block";
-      }
-
       async function handleEventStream(response, textarea) {
-        if (!response.ok) {
-          if (response.status === 401) {
-            resetToTurnstile();
-          } else {
-            const errorData = await response.json();
-            throw new Error("エラー:", errorData.error);
-          }
-        }
-
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
         let text = "";
@@ -215,8 +217,7 @@
       }
 
       async function translateText() {
-        errorMessage.style.display = "none";
-        translatedPrompt.value = "翻訳中...";
+        translateErrorMessage.style.display = "none";
         toggleButton(translateBtn, translateSpinner, true);
         let translatedText = "";
 
@@ -228,9 +229,19 @@
             body: formData,
             credentials: "include",
           });
+          if (!response.ok) {
+            if (response.status === 401) {
+              translateErrorMessage.style.display = "block";
+              resetToTurnstile();
+            } else {
+              const errorData = await response.json();
+              throw new Error("エラー:", errorData.error);
+            }
+          }
           await handleEventStream(response, translatedPrompt);
         } catch (error) {
-          handleError(error);
+          console.error("エラー: ", error);
+          translateErrorMessage.style.display = "block";
         } finally {
           toggleButton(translateBtn, translateSpinner, false);
         }
@@ -239,7 +250,7 @@
       async function generateImage() {
         toggleButton(generateBtn, generateSpinner, true);
         img.style.display = "none";
-        errorMessage.style.display = "none";
+        generateErrorMessage.style.display = "none";
 
         try {
           const formData = new FormData();
@@ -270,7 +281,8 @@
             throw new Error("画像データが取得できませんでした。");
           }
         } catch (error) {
-          handleError(error);
+          console.error("エラー: ", error);
+          generateErrorMessage.style.display = "block";
         } finally {
           toggleButton(generateBtn, generateSpinner, false);
         }
