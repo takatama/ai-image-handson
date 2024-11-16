@@ -8,3 +8,6 @@ binding = "AI"
 
 [env.production.vars]
 ALLOWED_ORIGIN="https://ai-image-handson.pages.dev"
+
+[env.production.build]
+command="npm install"
