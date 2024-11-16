@@ -1,12 +1,9 @@
-export async function onRequestPost({ request, env }) {
-  const allowedOrigin = env.ALLOWED_ORIGIN;
-  const origin = request.headers.get("Origin");
-  if (allowedOrigin !== origin) {
-    console.error(
-      `許可されていないOriginです。origin=${origin}, allowedOrigin=${allowedOrigin}`
-    );
-    return new Response("Forbidden", { status: 403 });
-  }
+import { verifySession } from "../utils/session.js";
+import { verifyOrigin } from "../utils/origin.js";
+
+export const onRequestPost = [verifySession, verifyOrigin, handleGenerateImage];
+
+async function handleGenerateImage({ request, env }) {
   const formData = await request.formData();
   const prompt = formData.get("prompt");
   return await generateImage(prompt, env);
