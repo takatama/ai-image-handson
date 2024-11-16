@@ -4,98 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI画像生成ハンズオン</title>
-    <style>
-      body {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        max-width: 512px;
-        margin: 0 auto;
-        font-family: Arial, sans-serif;
-        padding: 10px;
-      }
-      textarea,
-      button {
-        width: 100%;
-        font-size: 1em;
-        border-radius: 4px;
-        border: 1px solid #ccc;
-        margin-top: 10px;
-      }
-      textarea {
-        height: 60px;
-        padding: 8px;
-        resize: none;
-      }
-      button {
-        position: relative;
-        padding: 10px;
-        background-color: #4caf50;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        margin-bottom: 10px;
-
-        padding: 10px;
-        background-color: #4caf50;
-        color: white;
-        cursor: pointer;
-      }
-      button:disabled {
-        background-color: #a5d6a7;
-        cursor: not-allowed;
-      }
-      .spinner {
-        margin-left: 8px;
-        width: 20px;
-        height: 20px;
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #3498db;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        display: none;
-      }
-      @keyframes spin {
-        from {
-          transform: rotate(0deg);
-        }
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      #image-container {
-        width: 100%;
-        height: 512px;
-        margin-top: 10px;
-        border: 1px solid #ccc;
-      }
-      #generated-image {
-        max-width: 100%;
-        max-height: 100%;
-        display: none;
-      }
-      .style-hint {
-        font-size: 0.8em;
-        color: #6c757d;
-        margin-top: 4px;
-        margin-bottom: 12px;
-      }
-      .error-message {
-        color: red;
-        display: none;
-        font-size: 0.9em;
-      }
-    </style>
+    <link rel="stylesheet" href="style.css" />
     <script
       src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=initializeTurnstile"
       defer
     ></script>
   </head>
   <body>
-    <div id="turnstile-widget" style="margin-bottom: 20px"></div>
+    <div id="turnstile-widget"></div>
     <div id="main-content">
       <label for="prompt">何をどんな風に描きたいですか？</label>
       <p class="style-hint">
@@ -109,13 +25,7 @@
         <span>英語に翻訳</span>
         <div class="spinner" id="translate-spinner"></div>
       </button>
-      <p
-        id="translate-error-message"
-        class="error-message"
-        style="display: none"
-      >
-        翻訳に失敗しました。もう一度試してください。
-      </p>
+      <p id="translate-error-message" class="error-message"></p>
       <label for="translated-prompt">翻訳結果</label>
       <textarea
         id="translated-prompt"
@@ -125,13 +35,7 @@
         <span>画像を生成</span>
         <div class="spinner" id="generate-spinner"></div>
       </button>
-      <p
-        id="generate-error-message"
-        class="error-message"
-        style="display: none"
-      >
-        画像生成に失敗しました。もう一度試すか、プロンプトを変えてください。
-      </p>
+      <p id="generate-error-message" class="error-message"></p>
       <div id="image-container">
         <img id="generated-image" src="" alt="Generated Image" />
       </div>
@@ -171,6 +75,7 @@
 
       function initializeTurnstile() {
         turnstile.render("#turnstile-widget", {
+          // 自分で作成したTurnstileのSite Keyを記入してください
           sitekey: "0x4AAAAAAAzs018lIIK5s9-R",
           callback: handleTurnstileResponse,
           "expired-callback": resetToTurnstile,
@@ -231,6 +136,8 @@
           });
           if (!response.ok) {
             if (response.status === 401) {
+              translateErrorMessage.textContent =
+                "セッションの有効期限が切れました。もう一度試してください。";
               translateErrorMessage.style.display = "block";
               resetToTurnstile();
             } else {
@@ -241,6 +148,8 @@
           await handleEventStream(response, translatedPrompt);
         } catch (error) {
           console.error("エラー: ", error);
+          translateErrorMessage.textContent =
+            "翻訳に失敗しました。もう一度試してください。";
           translateErrorMessage.style.display = "block";
         } finally {
           toggleButton(translateBtn, translateSpinner, false);
@@ -254,9 +163,6 @@
 
         try {
           const formData = new FormData();
-          // Step1. 日本語プロンプトで画像生成
-          // formData.set("prompt", promptInput.value);
-          // Step2. 翻訳した英語プロンプトで画像生成
           formData.set("prompt", translatedPrompt.value);
 
           const response = await fetch(`/generate-image`, {
@@ -267,6 +173,9 @@
 
           if (!response.ok) {
             if (response.status === 401) {
+              generateErrorMessage.textContent =
+                "セッションの有効期限が切れました。もう一度試してください。";
+              generateErrorMessage.style.display = "block";
               resetToTurnstile();
             } else {
               throw new Error("画像生成エラー");
@@ -282,6 +191,8 @@
           }
         } catch (error) {
           console.error("エラー: ", error);
+          generateErrorMessage.textContent =
+            "画像生成に失敗しました。もう一度試すか、プロンプトを変えてください。";
           generateErrorMessage.style.display = "block";
         } finally {
           toggleButton(generateBtn, generateSpinner, false);
