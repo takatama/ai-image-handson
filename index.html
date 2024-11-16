@@ -171,6 +171,7 @@
 
       function initializeTurnstile() {
         turnstile.render("#turnstile-widget", {
+          // 自分で作成したTurnstileのSite Keyを記入してください
           sitekey: "0x4AAAAAAAzs018lIIK5s9-R",
           callback: handleTurnstileResponse,
           "expired-callback": resetToTurnstile,
