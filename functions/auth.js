@@ -1,6 +1,6 @@
-import { verifyOrigin } from "../utils/origin.js";
 import turnstilePlugin from "@cloudflare/pages-plugin-turnstile";
 import { createSignedCookie } from "../utils/session";
+import { verifyOrigin } from "../utils/origin.js";
 
 export const onRequestPost = [
   verifyOrigin,
@@ -10,10 +10,10 @@ export const onRequestPost = [
       secret: context.env.TRUNSTILE_SECRET_KEY,
     })(context);
   },
-  // セッションCookieの払い出し
   async ({ request, env }) => {
     const sessionSecret = new TextEncoder().encode(env.SESSION_SECRET);
     const response = new Response("Authenticated", { status: 200 });
+    // セッションCookieの払い出し
     response.headers.set(
       "Set-Cookie",
       await createSignedCookie({ authenticated: true }, sessionSecret)
