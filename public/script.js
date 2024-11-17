@@ -1,10 +1,7 @@
-const promptInput = document.getElementById("prompt");
-const translatedPrompt = document.getElementById("translated-prompt");
 const translateBtn = document.getElementById("translate-btn");
 const generateBtn = document.getElementById("generate-btn");
 const translateSpinner = document.getElementById("translate-spinner");
 const generateSpinner = document.getElementById("generate-spinner");
-const img = document.getElementById("generated-image");
 const translateErrorMessage = document.getElementById(
   "translate-error-message"
 );
@@ -78,6 +75,7 @@ async function handleEventStream(response, textarea) {
 async function translateText() {
   translateErrorMessage.style.display = "none";
   toggleButton(translateBtn, translateSpinner, true);
+  const promptInput = document.getElementById("prompt");
 
   try {
     const formData = new FormData();
@@ -98,6 +96,7 @@ async function translateText() {
         throw new Error("エラー:", errorData.error);
       }
     }
+    const translatedPrompt = document.getElementById("translated-prompt");
     await handleEventStream(response, translatedPrompt);
   } catch (error) {
     console.error("エラー: ", error);
@@ -110,9 +109,9 @@ async function translateText() {
 }
 
 async function generateImage() {
-  toggleButton(generateBtn, generateSpinner, true);
-  img.style.display = "none";
   generateErrorMessage.style.display = "none";
+  toggleButton(generateBtn, generateSpinner, true);
+  const translatedPrompt = document.getElementById("translated-prompt");
 
   try {
     const formData = new FormData();
@@ -137,6 +136,7 @@ async function generateImage() {
 
     const data = await response.json();
     if (data.imageUrl) {
+      const img = document.getElementById("generated-image");
       img.src = data.imageUrl;
       img.style.display = "block";
     } else {
