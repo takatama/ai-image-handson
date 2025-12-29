@@ -79,6 +79,10 @@ async function generateImage() {
   try {
     const formData = new FormData();
     formData.set("prompt", translatedPrompt.value);
+    const selectedModel = document.querySelector('input[name="model"]:checked');
+    if (selectedModel) {
+      formData.set("model", selectedModel.value);
+    }
     const response = await fetch(`/generate-image`, {
       method: "POST",
       body: formData,
