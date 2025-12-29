@@ -18,6 +18,25 @@ button {
   margin-top: 10px;
 }
 
+.model-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.model-label {
+  font-weight: bold;
+  font-size: 0.95em;
+}
+
+.model-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95em;
+}
+
 textarea {
   box-sizing: border-box;
   height: 68px;
