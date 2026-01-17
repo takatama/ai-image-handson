@@ -13,6 +13,7 @@ async function handleGenerateImage({ request, env }) {
 
   const allowedModels = new Set([
     "@cf/black-forest-labs/flux-2-dev",
+    "@cf/black-forest-labs/flux-2-klein-4b",
     "@cf/black-forest-labs/flux-1-schnell",
   ]);
 
